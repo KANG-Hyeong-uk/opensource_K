@@ -1,0 +1,267 @@
+.ai-eval-page {
+    padding: 80px 0 120px;
+    background-color: #F0F4F8;
+    min-height: calc(100vh - 80px);
+    overflow-x: hidden;
+}
+
+.ai-eval-header {
+    text-align: center;
+    margin-bottom: 80px;
+}
+
+.ai-eval-header h1 {
+    font-size: 40px;
+    margin-bottom: 20px;
+    font-weight: 800;
+    color: #111;
+}
+
+.ai-eval-header p {
+    color: #666;
+    font-size: 18px;
+    line-height: 1.6;
+}
+
+.docs-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 40px;
+    perspective: 1000px;
+    padding: 20px;
+}
+
+/* Float Animation for the whole container */
+@keyframes floatSimple {
+    0% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+
+    100% {
+        transform: translateY(0px);
+    }
+}
+
+.doc-card-container {
+    position: relative;
+    width: 100%;
+    height: 400px;
+    cursor: pointer;
+    /* Apply float animation to the container so it floats regardless of flip state */
+    animation: floatSimple 6s ease-in-out infinite;
+}
+
+/* Stagger Animations */
+.doc-card-container:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.doc-card-container:nth-child(2) {
+    animation-delay: 2s;
+}
+
+.doc-card-container:nth-child(3) {
+    animation-delay: 4s;
+}
+
+.doc-card-container:nth-child(4) {
+    animation-delay: 1s;
+}
+
+.doc-card-container:nth-child(5) {
+    animation-delay: 3s;
+}
+
+.doc-card-container:nth-child(6) {
+    animation-delay: 5s;
+}
+
+
+.doc-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+    transform-style: preserve-3d;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    border-radius: 20px;
+}
+
+/* Flip Effect */
+.doc-card-container.flipped .doc-card-inner {
+    transform: rotateY(180deg);
+}
+
+.doc-card-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Front Face (Initial State - The Back Design) */
+.doc-card-front {
+    background: linear-gradient(135deg, #00C6FB 0%, #005BEA 100%);
+    /* Blue gradient */
+    color: white;
+}
+
+/* Back Face (Revealed State - Content) */
+.doc-card-back {
+    background: white;
+    color: #333;
+    transform: rotateY(180deg);
+    justify-content: flex-start;
+    /* Align content to top */
+    padding-top: 50px;
+}
+
+/* Front Face Decorations */
+.card-pattern {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.icon-wrapper {
+    width: 80px;
+    height: 80px;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(4px);
+}
+
+.lock-icon {
+    font-size: 32px;
+}
+
+.click-hint {
+    font-size: 14px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    opacity: 0.8;
+    font-weight: 600;
+}
+
+.corner-deco {
+    position: absolute;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 24px;
+}
+
+.top-left {
+    top: 20px;
+    left: 20px;
+}
+
+.top-right {
+    top: 20px;
+    right: 20px;
+}
+
+.bottom-left {
+    bottom: 20px;
+    left: 20px;
+}
+
+.bottom-right {
+    bottom: 20px;
+    right: 20px;
+}
+
+/* Back Face Content Styles */
+.doc-card-back .doc-icon {
+    font-size: 40px;
+    margin-bottom: 20px;
+    text-shadow: none;
+}
+
+.doc-card-back h3 {
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 12px;
+    color: #222;
+}
+
+.doc-card-back .doc-subtitle {
+    font-size: 13px;
+    color: var(--color-primary);
+    font-weight: 700;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.doc-card-back p {
+    font-size: 15px;
+    color: #555;
+    line-height: 1.6;
+}
+
+.download-hint {
+    margin-top: auto;
+    /* Push to bottom */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--color-primary);
+    font-size: 12px;
+    font-weight: 600;
+    opacity: 0.8;
+    padding-bottom: 10px;
+}
+
+.download-icon-small {
+    font-size: 20px;
+    margin-bottom: 4px;
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+
+    0%,
+    20%,
+    50%,
+    80%,
+    100% {
+        transform: translateY(0);
+    }
+
+    40% {
+        transform: translateY(-5px);
+    }
+
+    60% {
+        transform: translateY(-3px);
+    }
+}
+
+@media (max-width: 1024px) {
+    .docs-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .docs-grid {
+        grid-template-columns: 1fr;
+    }
+}

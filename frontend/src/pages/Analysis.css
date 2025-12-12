@@ -1,0 +1,84 @@
+.analysis-page {
+    padding: 80px 20px;
+    max-width: 800px;
+    /* Focus content */
+}
+
+.analysis-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.analysis-header h1 {
+    font-size: 36px;
+    margin-bottom: 12px;
+}
+
+.analysis-form {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 60px;
+}
+
+.url-input {
+    flex: 1;
+    font-size: 18px;
+    padding: 16px 24px;
+}
+
+.results-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    /* 2x3 as requested or 3x2? 2x3 grid means 2 cols, 3 rows usually or 2 rows 3 cols. Let's do 3 cols 2 rows for desktop */
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+
+.result-card {
+    background: white;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    padding: 32px 24px;
+    text-align: center;
+    transition: all 0.3s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+}
+
+.result-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+    border-color: var(--color-primary);
+}
+
+.result-icon {
+    font-size: 40px;
+    margin-bottom: 16px;
+}
+
+.result-card h3 {
+    font-size: 16px;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.result-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: #111;
+    margin-bottom: 12px;
+}
+
+.result-card p {
+    font-size: 14px;
+    color: #888;
+}
+
+@media (max-width: 768px) {
+    .results-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .analysis-form {
+        flex-direction: column;
+    }
+}
