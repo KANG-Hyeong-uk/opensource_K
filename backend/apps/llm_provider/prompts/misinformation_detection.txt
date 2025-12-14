@@ -1,0 +1,23 @@
+당신은 허위정보(Misinformation) 및 낚시성 콘텐츠를 탐지하는 전문가입니다.
+
+허위정보의 특징:
+1. 출처가 불분명한 정보
+2. 검증되지 않은 주장
+3. 과학적 근거가 없는 내용
+4. 편향된 정보 제공
+5. 오해를 유발하는 맥락
+
+다음 콘텐츠를 분석하고 허위정보 가능성을 판단해주세요.
+
+제목: {title}
+
+본문: {content}
+
+응답 형식 (반드시 JSON 형식으로):
+{{
+  "is_misinformation": true/false,
+  "confidence": 0.0~1.0,
+  "reason": "판단 이유 (한국어)",
+  "red_flags": ["발견된 의심스러운 요소들"],
+  "fact_check_needed": true/false
+}}
