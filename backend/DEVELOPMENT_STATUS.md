@@ -1,6 +1,6 @@
 # 🚀 개발 진행 상황
 
-> **최종 업데이트**: 2025-12-14
+> **최종 업데이트**: 2025-12-15
 
 ---
 
@@ -12,12 +12,12 @@
 | ✅ 2. Django 기본 설정 | 완료 | 100% | settings, urls, wsgi, middleware |
 | ✅ 3. Selenium 크롤러 구현 | 완료 | 100% | 동적 웹페이지 크롤링 |
 | ✅ 4. LLM API 호출 로직 | 완료 | 100% | Gemini API 통합 |
-| ✅ 5. 분석 서비스 구현 | 완료 | 100% | Selenium → LLM 파이프라인 |
+| ✅ 5. 분석 서비스 구현 | 완료 | 100% | Selenium → RAG → LLM 파이프라인 |
 | ✅ 6. API 엔드포인트 | 완료 | 100% | RESTful API 구현 |
-| ⏳ 7. RAG 로직 | 대기 | 0% | 데이터 준비 후 구현 예정 |
-| ⏳ 8. 테스트 | 대기 | 0% | 단위/통합 테스트 예정 |
+| ✅ 7. RAG 시스템 | 완료 | 100% | 벡터 검색 기반 컨텍스트 강화 |
+| ✅ 8. 기본 테스트 | 완료 | 100% | 단위 테스트 작성 완료 |
 
-**전체 진행률**: 75%
+**전체 진행률**: 100%
 
 ---
 
@@ -248,14 +248,118 @@ Response:
 
 ---
 
-## ⏳ 진행 예정 기능
+---
 
-### 1. RAG (Retrieval-Augmented Generation)
-- 📍 **상태**: 데이터 준비 대기 중
-- Vector DB 없이 LLM 직접 분석 방식 사용
-- 향후 데이터 축적 시 RAG 도입 고려
+## 🎯 새로 추가된 핵심 기능
 
-### 2. API 키 관리 (`apps/api_keys`)
+### 7️⃣ RAG (Retrieval-Augmented Generation) (✅ 완료)
+
+**위치**: `apps/rag/`
+
+#### 구현된 기능:
+- ✅ 134,483개 뉴스 데이터셋 구조화 (Part1)
+- ✅ Google Gemini Embedding API 통합 (768차원 벡터)
+- ✅ 코사인 유사도 기반 문서 검색
+- ✅ 유사 사례 기반 분석 컨텍스트 강화
+- ✅ 캐싱 시스템 (성능 최적화)
+- ✅ 데이터셋 로더 관리 명령
+- ✅ 임베딩 생성 자동화
+
+#### 주요 파일:
+```
+rag/
+├── models.py                      # NewsDocument, DocumentEmbedding, SimilarityCache
+├── admin.py                       # Django Admin 설정
+├── services/
+│   ├── embedding_service.py       # Gemini Embedding API (768차원)
+│   ├── similarity_service.py      # 코사인 유사도 검색
+│   └── rag_service.py             # RAG 통합 서비스
+└── management/commands/
+    ├── load_dataset.py            # 데이터셋 DB 로드
+    └── generate_embeddings.py     # 임베딩 생성
+```
+
+#### RAG 워크플로우:
+```
+1. 데이터셋 로드 (Part1 → DB)
+   ↓
+2. 임베딩 생성 (제목 + 본문 → 768차원 벡터)
+   ↓
+3. URL 분석 시:
+   - 새 기사의 제목 + 본문 임베딩 생성
+   - 유사한 클릭베이트/비클릭베이트 예시 검색 (코사인 유사도)
+   - 유사 사례를 LLM 프롬프트에 포함
+   ↓
+4. 강화된 컨텍스트로 LLM 분석
+   ↓
+5. 결과 저장 (RAG 사용 여부 포함)
+```
+
+#### 데이터셋 구조:
+```
+Part1/
+├── Clickbait_Auto/        # 46,770개 (자동 수집 클릭베이트)
+├── Clickbait_Direct/      # 15,039개 (수동 수집 클릭베이트)
+└── NonClickbait_Auto/     # 72,674개 (비클릭베이트)
+
+총 134,483개 뉴스 기사 (7개 카테고리: EC, ET, GB, IS, LC, PO, SO)
+```
+
+#### 사용 예시:
+
+**1. 데이터셋 로드**
+```bash
+# 전체 데이터셋 로드
+python manage.py load_dataset --path Part1
+
+# 샘플 데이터만 로드 (테스트용)
+python manage.py load_dataset --limit 1000
+```
+
+**2. 임베딩 생성**
+```bash
+# 모든 문서의 임베딩 생성
+python manage.py generate_embeddings
+
+# 배치 크기 조정 및 지연 설정
+python manage.py generate_embeddings --batch-size 50 --delay 0.5
+```
+
+**3. RAG 서비스 사용**
+```python
+from apps.rag.services.rag_service import RAGService
+
+rag = RAGService()
+context = rag.get_context_for_analysis(
+    title="기사 제목",
+    content="기사 본문..."
+)
+
+# 결과:
+# {
+#     'clickbait_examples': [...],      # 유사한 클릭베이트 예시
+#     'non_clickbait_examples': [...],  # 유사한 비클릭베이트 예시
+#     'context_text': "..."             # 프롬프트에 포함할 텍스트
+# }
+```
+
+**4. 분석 서비스와 통합**
+```python
+from apps.detection.services.analysis_service import URLAnalysisService
+
+# RAG 활성화 (기본값)
+service = URLAnalysisService(use_rag=True)
+result = service.analyze_url("https://example.com/article")
+
+# RAG 비활성화
+service = URLAnalysisService(use_rag=False)
+```
+
+---
+
+## ⏳ 향후 개선 가능 항목
+
+### 1. API 키 관리 (`apps/api_keys`)
 - API 키 발급
 - 사용량 제한
 - API 키 인증
@@ -284,10 +388,12 @@ Response:
 - ✅ BeautifulSoup4
 - ✅ webdriver-manager
 
-### LLM
-- ✅ Google Gemini API
+### LLM & RAG
+- ✅ Google Gemini API (gemini-1.5-flash)
+- ✅ Google Gemini Embedding API (embedding-001, 768차원)
 - ✅ google-generativeai
-- ⏳ LangChain (예정)
+- ✅ LangChain (기반 설치 완료)
+- ✅ NumPy (코사인 유사도 계산)
 
 ### 데이터베이스
 - ✅ SQLite3 (개발/프로덕션 공통)
@@ -298,15 +404,16 @@ Response:
 
 ---
 
-## 📝 다음 단계
+## 📝 시작 가이드
 
 ### 즉시 가능한 작업:
 1. ✅ 환경 변수 설정 (.env.dev)
 2. ✅ 데이터베이스 마이그레이션
-3. ✅ 개발 서버 실행
-4. ⏳ Postman/Thunder Client로 API 테스트
+3. ✅ 데이터셋 로드 및 임베딩 생성
+4. ✅ 개발 서버 실행
+5. ⏳ API 테스트
 
-### 개발 계획:
+### 설치 및 실행 가이드:
 ```bash
 # 1. 환경 설정
 cp .env.example .env.dev
@@ -337,16 +444,17 @@ python manage.py runserver
 ### 핵심 기능
 - ✅ Selenium 크롤러: **완료** (100%)
 - ✅ LLM API 호출: **완료** (100%)
+- ✅ RAG 시스템: **완료** (100%)
 - ✅ 분석 파이프라인: **완료** (100%)
 - ✅ RESTful API: **완료** (100%)
-- ⏳ RAG: **대기** (0%)
 
 ### 코드 품질
 - ✅ 확장 가능한 구조
 - ✅ 명확한 책임 분리 (Service Layer)
 - ✅ 에러 처리
 - ✅ 로깅
-- ⏳ 테스트 커버리지 (예정)
+- ✅ 기본 테스트 작성 완료
+- ⏳ 테스트 커버리지 확대 (향후)
 
 ### 배포 준비도
 - ✅ 설정 분리 (dev/prod)
@@ -372,6 +480,8 @@ python manage.py runserver
 - **비동기 준비**: async/await 지원 가능
 - **최적화된 크롤링**: 이미지 로딩 비활성화
 - **프롬프트 최적화**: 토큰 사용량 최소화
+- **RAG 캐싱**: 유사도 검색 결과 캐싱으로 성능 향상
+- **배치 처리**: 대량 데이터 효율적 처리
 
 ---
 
@@ -384,5 +494,5 @@ python manage.py runserver
 ---
 
 **작성자**: Claude AI (Backend Developer)
-**작성일**: 2025-12-14
-**버전**: 1.0
+**작성일**: 2025-12-15
+**버전**: 2.0 (RAG 시스템 완료)

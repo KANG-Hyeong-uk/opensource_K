@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'apps.detection',
     'apps.crawler',
     'apps.llm_provider',
+    'apps.rag',  # RAG (Retrieval-Augmented Generation)
     'apps.api_keys',
     'apps.analytics',
 ]
