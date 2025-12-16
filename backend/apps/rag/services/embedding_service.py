@@ -1,27 +1,31 @@
 """
 임베딩 서비스
-- Google Gemini Embedding API를 사용하여 텍스트를 벡터로 변환
+- Sentence-Transformers 라이브러리를 사용하여 텍스트를 벡터로 변환
+- 로컬에서 실행되므로 API 할당량 제한 없음
 """
-import os
 import logging
 from typing import List, Optional
-import google.generativeai as genai
+from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger(__name__)
 
 
 class EmbeddingService:
-    """텍스트 임베딩 서비스"""
+    """텍스트 임베딩 서비스 (Sentence-Transformers 사용)"""
 
-    def __init__(self):
-        """Gemini API 초기화"""
-        api_key = os.getenv('GEMINI_API_KEY')
-        if not api_key:
-            raise ValueError("GEMINI_API_KEY 환경 변수가 설정되지 않았습니다.")
+    def __init__(self, model_name: str = 'all-MiniLM-L6-v2'):
+        """
+        Sentence-Transformers 모델 초기화
 
-        genai.configure(api_key=api_key)
-        self.model_name = 'models/embedding-001'
-        self.dimension = 768  # Gemini embedding-001의 벡터 차원
+        Args:
+            model_name: 사용할 모델 이름 (기본값: 'all-MiniLM-L6-v2')
+                - all-MiniLM-L6-v2: 384차원, 빠르고 효율적
+                - paraphrase-multilingual-MiniLM-L12-v2: 384차원, 다국어 지원
+        """
+        logger.info(f"임베딩 모델 로딩 중: {model_name}")
+        self.model = SentenceTransformer(model_name)
+        self.model_name = model_name
+        self.dimension = self.model.get_sentence_embedding_dimension()
 
     def generate_embedding(self, text: str) -> List[float]:
         """
@@ -31,25 +35,21 @@ class EmbeddingService:
             text: 임베딩할 텍스트
 
         Returns:
-            임베딩 벡터 (768차원 리스트)
+            임베딩 벡터 (384차원 리스트)
         """
         try:
-            # 텍스트 길이 제한 (Gemini API 제한)
+            # 텍스트 길이 제한
             if len(text) > 10000:
                 text = text[:10000]
                 logger.warning(f"텍스트가 너무 길어 10000자로 잘랐습니다.")
 
-            # Gemini Embedding API 호출
-            result = genai.embed_content(
-                model=self.model_name,
-                content=text,
-                task_type="retrieval_document"
-            )
+            # Sentence-Transformers 모델로 임베딩 생성
+            embedding = self.model.encode(text, convert_to_numpy=True)
+            embedding_list = embedding.tolist()
 
-            embedding = result['embedding']
-            logger.debug(f"임베딩 생성 완료: {len(embedding)}차원")
+            logger.debug(f"임베딩 생성 완료: {len(embedding_list)}차원")
 
-            return embedding
+            return embedding_list
 
         except Exception as e:
             logger.error(f"임베딩 생성 실패: {str(e)}")
@@ -63,20 +63,16 @@ class EmbeddingService:
             query: 검색 쿼리 텍스트
 
         Returns:
-            임베딩 벡터 (768차원 리스트)
+            임베딩 벡터 (384차원 리스트)
         """
         try:
-            # 쿼리용 임베딩은 task_type을 retrieval_query로 설정
-            result = genai.embed_content(
-                model=self.model_name,
-                content=query,
-                task_type="retrieval_query"
-            )
+            # Sentence-Transformers에서는 문서와 쿼리를 동일하게 처리
+            embedding = self.model.encode(query, convert_to_numpy=True)
+            embedding_list = embedding.tolist()
 
-            embedding = result['embedding']
-            logger.debug(f"쿼리 임베딩 생성 완료: {len(embedding)}차원")
+            logger.debug(f"쿼리 임베딩 생성 완료: {len(embedding_list)}차원")
 
-            return embedding
+            return embedding_list
 
         except Exception as e:
             logger.error(f"쿼리 임베딩 생성 실패: {str(e)}")
@@ -85,34 +81,47 @@ class EmbeddingService:
     def generate_batch_embeddings(
         self,
         texts: List[str],
-        batch_size: int = 100
+        batch_size: int = 32
     ) -> List[List[float]]:
         """
         여러 텍스트에 대한 임베딩을 배치로 생성
 
         Args:
             texts: 임베딩할 텍스트 리스트
-            batch_size: 배치 크기 (기본값: 100)
+            batch_size: 배치 크기 (기본값: 32)
 
         Returns:
             임베딩 벡터 리스트
         """
-        embeddings = []
+        try:
+            # 텍스트 길이 제한
+            processed_texts = []
+            for text in texts:
+                if len(text) > 10000:
+                    text = text[:10000]
+                    logger.warning(f"텍스트가 너무 길어 10000자로 잘랐습니다.")
+                processed_texts.append(text)
 
-        for i in range(0, len(texts), batch_size):
-            batch = texts[i:i + batch_size]
-            logger.info(f"배치 처리 중: {i+1}-{min(i+batch_size, len(texts))}/{len(texts)}")
+            logger.info(f"배치 임베딩 생성 시작: {len(processed_texts)}개 텍스트")
 
-            for text in batch:
-                try:
-                    embedding = self.generate_embedding(text)
-                    embeddings.append(embedding)
-                except Exception as e:
-                    logger.error(f"텍스트 임베딩 실패: {str(e)}")
-                    # 실패한 경우 None 추가
-                    embeddings.append(None)
+            # Sentence-Transformers의 배치 처리 사용
+            embeddings_array = self.model.encode(
+                processed_texts,
+                batch_size=batch_size,
+                convert_to_numpy=True,
+                show_progress_bar=True
+            )
 
-        return embeddings
+            # numpy array를 리스트로 변환
+            embeddings = [emb.tolist() for emb in embeddings_array]
+
+            logger.info(f"배치 임베딩 생성 완료: {len(embeddings)}개")
+
+            return embeddings
+
+        except Exception as e:
+            logger.error(f"배치 임베딩 생성 실패: {str(e)}")
+            raise
 
     def get_dimension(self) -> int:
         """임베딩 벡터의 차원 수 반환"""

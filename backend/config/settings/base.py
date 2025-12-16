@@ -156,7 +156,7 @@ CORS_ALLOWED_ORIGINS = []
 
 # Gemini LLM Settings
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
-GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'models/gemini-1.5-flash')
+GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-flash-latest')  # 또는 gemini-2.5-flash
 
 # Selenium Settings
 SELENIUM_HEADLESS = True

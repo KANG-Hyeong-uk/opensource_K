@@ -24,6 +24,12 @@ lxml==5.1.0
 html5lib==1.1
 
 # ====================
+# Embeddings (Local)
+# ====================
+sentence-transformers==3.3.1
+torch==2.2.2
+
+# ====================
 # Utilities
 # ====================
 python-dotenv==1.0.0

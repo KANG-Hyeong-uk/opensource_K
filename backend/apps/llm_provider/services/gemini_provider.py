@@ -30,7 +30,7 @@ class GeminiProvider:
         genai.configure(api_key=api_key)
 
         # 모델 설정
-        model_name = getattr(settings, 'GEMINI_MODEL', 'models/gemini-1.5-flash')
+        model_name = getattr(settings, 'GEMINI_MODEL', 'gemini-flash-latest')
         self.model = genai.GenerativeModel(model_name)
 
         # 프롬프트 관리자
@@ -251,7 +251,7 @@ class GeminiProvider:
             Dict: 모델 정보
         """
         return {
-            'model_name': getattr(settings, 'GEMINI_MODEL', 'models/gemini-1.5-flash'),
+            'model_name': getattr(settings, 'GEMINI_MODEL', 'gemini-flash-latest'),
             'provider': 'Google Gemini',
-            'version': '1.5'
+            'version': '2.5'
         }
