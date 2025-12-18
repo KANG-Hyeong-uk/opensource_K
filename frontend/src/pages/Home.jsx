@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import './Home.css';
-import { analyzeUrl } from '../api/analysis';
+import { analyzeUrl, submitFeedback } from '../api/analysis';
 
 const Home = () => {
     const [url, setUrl] = useState('');
     const [loading, setLoading] = useState(false);
     const [results, setResults] = useState(null);
     const [error, setError] = useState(null);
+    const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+    const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
 
     // 위험도 레벨별 등급 변환
     const getRiskGrade = (riskLevel) => {
@@ -114,6 +116,7 @@ const Home = () => {
         setLoading(true);
         setError(null);
         setResults(null);
+        setFeedbackSubmitted(false);
 
         try {
             // 실제 API 호출
@@ -135,6 +138,27 @@ const Home = () => {
             setError(err.userMessage || err.message || 'URL 분석 중 오류가 발생했습니다.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    // 피드백 제출 처리
+    const handleFeedbackSubmit = async (reason) => {
+        try {
+            // 백엔드 API로 피드백 제출
+            await submitFeedback(url, reason, results);
+
+            // 피드백 제출 완료
+            setFeedbackSubmitted(true);
+            setShowFeedbackModal(false);
+
+            // 3초 후 메시지 숨기기
+            setTimeout(() => {
+                setFeedbackSubmitted(false);
+            }, 3000);
+
+        } catch (error) {
+            console.error('Feedback submission error:', error);
+            alert('피드백 제출에 실패했습니다. 다시 시도해주세요.');
         }
     };
 
@@ -248,8 +272,77 @@ const Home = () => {
                                 </div>
                             </div>
                         )}
+
+                        {/* 사용자 피드백 섹션 */}
+                        <div className="feedback-section">
+                            <div className="feedback-header">
+                                <p>이 분석 결과가 정확하지 않다고 생각하시나요?</p>
+                            </div>
+                            <button
+                                className="feedback-button"
+                                onClick={() => setShowFeedbackModal(true)}
+                                disabled={feedbackSubmitted}
+                            >
+                                ❌ 오탐입니다
+                            </button>
+                            {feedbackSubmitted && (
+                                <div className="feedback-success-message">
+                                    ✅ 피드백이 제출되었습니다. 감사합니다!
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </section>
+            )}
+
+            {/* 피드백 모달 */}
+            {showFeedbackModal && (
+                <div className="feedback-modal-overlay" onClick={() => setShowFeedbackModal(false)}>
+                    <div className="feedback-modal-content" onClick={(e) => e.stopPropagation()}>
+                        <button
+                            className="modal-close-btn"
+                            onClick={() => setShowFeedbackModal(false)}
+                        >
+                            ×
+                        </button>
+                        <div className="feedback-modal-header">
+                            <h3>오탐 사유를 선택해주세요</h3>
+                            <p>여러분의 피드백으로 AI가 더 정확해집니다</p>
+                        </div>
+                        <div className="feedback-modal-body">
+                            <button
+                                className="feedback-reason-btn"
+                                onClick={() => handleFeedbackSubmit('교육적 맥락')}
+                            >
+                                <span className="reason-icon">📚</span>
+                                <div className="reason-text">
+                                    <strong>교육적 맥락</strong>
+                                    <span>교육, 학습 목적의 콘텐츠입니다</span>
+                                </div>
+                            </button>
+                            <button
+                                className="feedback-reason-btn"
+                                onClick={() => handleFeedbackSubmit('인용/보도')}
+                            >
+                                <span className="reason-icon">📰</span>
+                                <div className="reason-text">
+                                    <strong>인용/보도</strong>
+                                    <span>뉴스, 인용문 등 보도 목적입니다</span>
+                                </div>
+                            </button>
+                            <button
+                                className="feedback-reason-btn"
+                                onClick={() => handleFeedbackSubmit('문맥 오해')}
+                            >
+                                <span className="reason-icon">💬</span>
+                                <div className="reason-text">
+                                    <strong>문맥 오해</strong>
+                                    <span>AI가 문맥을 잘못 이해했습니다</span>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* Features Section */}

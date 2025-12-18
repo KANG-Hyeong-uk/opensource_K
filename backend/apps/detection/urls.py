@@ -19,4 +19,7 @@ urlpatterns = [
 
     # 통계
     path('statistics/', views.AnalysisStatisticsView.as_view(), name='statistics'),
+
+    # 사용자 피드백
+    path('feedback/', views.UserFeedbackView.as_view(), name='feedback'),
 ]

@@ -14,7 +14,8 @@ from apps.detection.serializers import (
     AnalysisRequestSerializer,
     AnalysisResultSerializer,
     AnalysisResultListSerializer,
-    AnalysisStatisticsSerializer
+    AnalysisStatisticsSerializer,
+    UserFeedbackSerializer
 )
 from apps.api_keys.authentication import APIKeyAuthentication
 from core.exceptions import CrawlerException, LLMException
@@ -225,4 +226,48 @@ class AnalysisStatisticsView(APIView):
                 'data': serializer.data
             },
             status=status.HTTP_200_OK
+        )
+
+
+class UserFeedbackView(APIView):
+    """
+    사용자 피드백 API
+    POST: 오탐 신고
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        """
+        오탐 피드백 제출
+
+        Body:
+            - url: 분석된 URL (required)
+            - reason: 오탐 사유 (required)
+            - analysis_result: 분석 결과 (optional)
+
+        Returns:
+            - 피드백 저장 결과
+        """
+        serializer = UserFeedbackSerializer(data=request.data, context={'request': request})
+
+        if not serializer.is_valid():
+            return Response(
+                {
+                    'error': True,
+                    'message': 'Invalid request data',
+                    'details': serializer.errors
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer.save()
+
+        return Response(
+            {
+                'success': True,
+                'message': 'Feedback submitted successfully',
+                'data': serializer.data
+            },
+            status=status.HTTP_201_CREATED
         )

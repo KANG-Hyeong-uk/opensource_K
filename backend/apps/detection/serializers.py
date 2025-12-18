@@ -3,7 +3,7 @@ Detection 앱 Serializers
 """
 
 from rest_framework import serializers
-from apps.detection.models import AnalysisResult
+from apps.detection.models import AnalysisResult, UserFeedback
 
 
 class AnalysisRequestSerializer(serializers.Serializer):
@@ -81,3 +81,20 @@ class AnalysisStatisticsSerializer(serializers.Serializer):
     hate_speech_detected = serializers.IntegerField()
     misinformation_detected = serializers.IntegerField()
     safe_content = serializers.IntegerField()
+
+
+class UserFeedbackSerializer(serializers.ModelSerializer):
+    """사용자 피드백"""
+
+    class Meta:
+        model = UserFeedback
+        fields = ['id', 'url', 'reason', 'analysis_result', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+    def create(self, validated_data):
+        """피드백 생성"""
+        # 현재 요청 사용자 추가
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            validated_data['user'] = request.user
+        return super().create(validated_data)

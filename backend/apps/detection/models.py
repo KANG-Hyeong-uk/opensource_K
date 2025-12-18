@@ -69,3 +69,39 @@ class AnalysisResult(models.Model):
             return "medium"
         else:
             return "low"
+
+
+class UserFeedback(models.Model):
+    """사용자 피드백 (오탐 신고)"""
+
+    REASON_CHOICES = [
+        ('educational', '교육적 맥락'),
+        ('citation', '인용/보도'),
+        ('context_misunderstanding', '문맥 오해'),
+    ]
+
+    url = models.URLField(max_length=2048, verbose_name="분석된 URL")
+    reason = models.CharField(max_length=50, choices=REASON_CHOICES, verbose_name="오탐 사유")
+    analysis_result = models.JSONField(default=dict, verbose_name="분석 결과")
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='feedbacks',
+        verbose_name="피드백 제출자"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="제출일시")
+
+    class Meta:
+        db_table = 'user_feedback'
+        verbose_name = '사용자 피드백'
+        verbose_name_plural = '사용자 피드백들'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['-created_at']),
+            models.Index(fields=['reason']),
+        ]
+
+    def __str__(self):
+        return f"{self.url} - {self.get_reason_display()} ({self.created_at.strftime('%Y-%m-%d')})"

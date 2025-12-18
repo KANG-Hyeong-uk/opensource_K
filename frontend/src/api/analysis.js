@@ -178,3 +178,46 @@ export const getRiskLevelColor = (riskLevel) => {
 
   return colors[riskLevel] || 'secondary';
 };
+
+/**
+ * 사용자 피드백 제출 (오탐 신고)
+ * @param {string} url - 분석된 URL
+ * @param {string} reason - 오탐 사유
+ * @param {object} analysisResult - 분석 결과
+ * @returns {Promise<Object>} 피드백 제출 결과
+ */
+export const submitFeedback = async (url, reason, analysisResult) => {
+  try {
+    // reason 매핑 (한글 -> 영문 키)
+    const reasonMap = {
+      '교육적 맥락': 'educational',
+      '인용/보도': 'citation',
+      '문맥 오해': 'context_misunderstanding'
+    };
+
+    const response = await apiClient.post('/api/v1/feedback/', {
+      url,
+      reason: reasonMap[reason] || reason,
+      analysis_result: analysisResult
+    });
+
+    logInfo('Feedback', 'Feedback submitted successfully', { url, reason });
+
+    return {
+      success: true,
+      message: response.data.message || '피드백이 제출되었습니다.',
+      data: response.data.data
+    };
+
+  } catch (error) {
+    logError('Feedback', 'Failed to submit feedback', error);
+
+    const errorMessage = error.message || '피드백 제출에 실패했습니다.';
+
+    throw {
+      ...error,
+      message: errorMessage,
+      userMessage: errorMessage
+    };
+  }
+};
