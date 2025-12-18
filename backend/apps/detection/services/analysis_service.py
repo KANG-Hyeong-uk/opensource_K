@@ -207,6 +207,7 @@ class URLAnalysisService:
             is_hate_speech=analysis_data.get('is_hate_speech', False),
             is_misinformation=analysis_data.get('is_misinformation', False),
             confidence_score=analysis_data.get('confidence_score', 0.0),
+            explanation=analysis_data.get('explanation', ''),
             analysis_details=details
         )
 

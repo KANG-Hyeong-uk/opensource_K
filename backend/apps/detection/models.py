@@ -31,6 +31,9 @@ class AnalysisResult(models.Model):
     # 신뢰도
     confidence_score = models.FloatField(default=0.0, verbose_name="전체 신뢰도 (0.0~1.0)")
 
+    # 판단 근거 (Explainability)
+    explanation = models.TextField(blank=True, default='', verbose_name="AI 판단 근거 (한 줄 요약)")
+
     # 상세 분석 결과 (JSON)
     analysis_details = models.JSONField(default=dict, blank=True, verbose_name="상세 분석 결과")
 

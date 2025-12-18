@@ -154,7 +154,8 @@ class PromptManager:
     "confidence": 0.0~1.0,
     "reason": "판단 이유"
   }},
-  "overall_risk_score": 0.0~1.0
+  "overall_risk_score": 0.0~1.0,
+  "explanation": "전체적인 판단 근거를 한 줄로 요약 (예: 과장된 제목과 선정적 표현으로 클릭베이트로 판단됨)"
 }}
 """
         return prompt

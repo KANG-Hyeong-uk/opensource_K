@@ -227,11 +227,30 @@ class GeminiProvider:
 
                 overall_risk = sum(scores) / len(scores) if scores else 0.0
 
+            # 전체 판단 근거 추출
+            explanation = analysis_result.get('explanation', '')
+
+            # explanation이 없으면 각 항목의 reason을 조합
+            if not explanation:
+                reasons = []
+                if clickbait.get('is_detected'):
+                    reasons.append(f"클릭베이트: {clickbait.get('reason', '')}")
+                if hate_speech.get('is_detected'):
+                    reasons.append(f"혐오표현: {hate_speech.get('reason', '')}")
+                if misinformation.get('is_detected'):
+                    reasons.append(f"허위정보: {misinformation.get('reason', '')}")
+
+                if reasons:
+                    explanation = ', '.join(reasons)
+                else:
+                    explanation = '안전한 콘텐츠로 판단됨'
+
             return {
                 'is_clickbait': clickbait.get('is_detected', False),
                 'is_hate_speech': hate_speech.get('is_detected', False),
                 'is_misinformation': misinformation.get('is_detected', False),
                 'confidence_score': round(overall_risk, 2),
+                'explanation': explanation,
                 'details': {
                     'clickbait': clickbait,
                     'hate_speech': hate_speech,

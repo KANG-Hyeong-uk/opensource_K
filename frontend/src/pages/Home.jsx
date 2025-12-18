@@ -39,7 +39,8 @@ const Home = () => {
             is_safe,
             confidence_score,
             risk_level,
-            analysis_details
+            analysis_details,
+            explanation
         } = analysisData;
 
         const resultCards = [];
@@ -100,7 +101,10 @@ const Home = () => {
             icon: is_safe ? '✔️' : '⚠️'
         });
 
-        return resultCards;
+        return {
+            cards: resultCards,
+            explanation: explanation || null
+        };
     };
 
     const handleAnalyze = async (e) => {
@@ -220,7 +224,7 @@ const Home = () => {
                     <div className="container">
                         <h2 className="results-title">분석 결과</h2>
                         <div className="results-grid">
-                            {results.map((item, index) => (
+                            {results.cards.map((item, index) => (
                                 <div key={index} className="result-card">
                                     <div className="result-icon">{item.icon}</div>
                                     <h3>{item.title}</h3>
@@ -229,6 +233,21 @@ const Home = () => {
                                 </div>
                             ))}
                         </div>
+
+                        {/* AI 판단 근거 - 가로로 길게 표시 */}
+                        {results.explanation && (
+                            <div className="explanation-section">
+                                <div className="explanation-card">
+                                    <div className="explanation-header">
+                                        <span className="explanation-icon">🔍</span>
+                                        <h3>AI 판단 근거</h3>
+                                    </div>
+                                    <div className="explanation-content">
+                                        {results.explanation}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </section>
             )}

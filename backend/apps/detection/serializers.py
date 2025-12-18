@@ -37,6 +37,7 @@ class AnalysisResultSerializer(serializers.ModelSerializer):
             'is_safe',
             'confidence_score',
             'risk_level',
+            'explanation',
             'analysis_details',
             'created_at',
             'updated_at'
@@ -66,6 +67,7 @@ class AnalysisResultListSerializer(serializers.ModelSerializer):
             'is_safe',
             'confidence_score',
             'risk_level',
+            'explanation',
             'created_at'
         ]
         read_only_fields = fields
