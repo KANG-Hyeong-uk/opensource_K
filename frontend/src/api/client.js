@@ -31,7 +31,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000
  */
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000, // 30초
+  timeout: 180000, // 180초 (3분) - Selenium + LLM + RAG 분석 시간 고려
   headers: {
     'Content-Type': 'application/json',
   },

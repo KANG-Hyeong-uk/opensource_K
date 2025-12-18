@@ -1,33 +1,137 @@
 import React, { useState } from 'react';
 import './Home.css';
+import { analyzeUrl } from '../api/analysis';
 
 const Home = () => {
     const [url, setUrl] = useState('');
     const [loading, setLoading] = useState(false);
     const [results, setResults] = useState(null);
+    const [error, setError] = useState(null);
 
-    // Mock Data
-    const mockResults = [
-        { title: '보안 점수', value: 'A+', desc: '최고 수준의 보안 등급입니다.', icon: '🛡️' },
-        { title: '응답 속도', value: '120ms', desc: '매우 빠른 응답 속도입니다.', icon: '⚡' },
-        { title: 'SEO 최적화', value: '92/100', desc: '검색 엔진 최적화가 잘 되어 있습니다.', icon: '🔍' },
-        { title: 'SSL 인증', value: 'Valid', desc: '유효한 인증서를 보유 중입니다.', icon: '🔒' },
-        { title: '모바일 호환', value: 'Good', desc: '모바일 기기에서 잘 보입니다.', icon: '📱' },
-        { title: '접근성', value: 'Pass', desc: '웹 접근성 표준을 준수합니다.', icon: '♿' },
-    ];
+    // 위험도 레벨별 등급 변환
+    const getRiskGrade = (riskLevel) => {
+        const grades = {
+            safe: 'A+',
+            low: 'B+',
+            medium: 'C',
+            high: 'D'
+        };
+        return grades[riskLevel] || 'N/A';
+    };
 
-    const handleAnalyze = (e) => {
+    // 위험도 설명 변환
+    const getRiskDescription = (riskLevel) => {
+        const descriptions = {
+            safe: '안전한 콘텐츠입니다.',
+            low: '낮은 위험도가 감지되었습니다.',
+            medium: '보통 수준의 위험도가 감지되었습니다.',
+            high: '높은 위험도가 감지되었습니다.'
+        };
+        return descriptions[riskLevel] || '분석 결과를 확인할 수 없습니다.';
+    };
+
+    // 백엔드 응답을 화면 표시용 형식으로 변환
+    const transformAnalysisResult = (analysisData) => {
+        const {
+            is_clickbait,
+            is_hate_speech,
+            is_misinformation,
+            is_safe,
+            confidence_score,
+            risk_level,
+            analysis_details
+        } = analysisData;
+
+        const resultCards = [];
+
+        // 1. 위험도 점수
+        resultCards.push({
+            title: '위험도 등급',
+            value: getRiskGrade(risk_level),
+            desc: getRiskDescription(risk_level),
+            icon: is_safe ? '🛡️' : '⚠️'
+        });
+
+        // 2. 신뢰도 점수
+        resultCards.push({
+            title: '신뢰도 점수',
+            value: `${Math.round(confidence_score * 100)}/100`,
+            desc: `AI 분석 신뢰도: ${(confidence_score * 100).toFixed(1)}%`,
+            icon: '🎯'
+        });
+
+        // 3. 클릭베이트 탐지
+        resultCards.push({
+            title: '클릭베이트 탐지',
+            value: is_clickbait ? '감지됨' : '안전',
+            desc: is_clickbait
+                ? (analysis_details?.clickbait_reason || '낚시성 콘텐츠가 감지되었습니다.')
+                : '클릭베이트 요소가 발견되지 않았습니다.',
+            icon: is_clickbait ? '🎣' : '✅'
+        });
+
+        // 4. 혐오 표현 탐지
+        resultCards.push({
+            title: '혐오 표현 탐지',
+            value: is_hate_speech ? '감지됨' : '안전',
+            desc: is_hate_speech
+                ? (analysis_details?.hate_speech_reason || '혐오 표현이 감지되었습니다.')
+                : '혐오 표현이 발견되지 않았습니다.',
+            icon: is_hate_speech ? '🚫' : '✅'
+        });
+
+        // 5. 허위정보 탐지
+        resultCards.push({
+            title: '허위정보 탐지',
+            value: is_misinformation ? '감지됨' : '안전',
+            desc: is_misinformation
+                ? (analysis_details?.misinformation_reason || '허위 정보 가능성이 감지되었습니다.')
+                : '허위 정보가 발견되지 않았습니다.',
+            icon: is_misinformation ? '❌' : '✅'
+        });
+
+        // 6. 종합 안전도
+        resultCards.push({
+            title: '종합 안전도',
+            value: is_safe ? 'Safe' : 'Unsafe',
+            desc: is_safe
+                ? '전반적으로 안전한 콘텐츠입니다.'
+                : '주의가 필요한 콘텐츠입니다.',
+            icon: is_safe ? '✔️' : '⚠️'
+        });
+
+        return resultCards;
+    };
+
+    const handleAnalyze = async (e) => {
         e.preventDefault();
         if (!url) return;
+
         setLoading(true);
-        // Simulate API call
-        setTimeout(() => {
-            setResults(mockResults);
+        setError(null);
+        setResults(null);
+
+        try {
+            // 실제 API 호출
+            const response = await analyzeUrl(url);
+
+            if (response.success && response.result) {
+                // 백엔드 응답을 화면 표시 형식으로 변환
+                const transformedResults = transformAnalysisResult(response.result);
+                setResults(transformedResults);
+
+                // API 사용 카운트 증가
+                const currentUsage = parseInt(localStorage.getItem('api_usage') || '0', 10);
+                localStorage.setItem('api_usage', currentUsage + 1);
+            } else {
+                setError('분석 결과를 받지 못했습니다.');
+            }
+        } catch (err) {
+            console.error('Analysis error:', err);
+            setError(err.userMessage || err.message || 'URL 분석 중 오류가 발생했습니다.');
+        } finally {
             setLoading(false);
-            // Increment usage counter in localStorage
-            const currentUsage = parseInt(localStorage.getItem('api_usage') || '0', 10);
-            localStorage.setItem('api_usage', currentUsage + 1);
-        }, 1500);
+        }
     };
 
     return (
@@ -54,13 +158,61 @@ const Home = () => {
                             value={url}
                             onChange={(e) => setUrl(e.target.value)}
                             required
+                            disabled={loading}
                         />
                         <button type="submit" className="btn btn-primary btn-large" disabled={loading}>
-                            {loading ? '분석 중...' : '무료로 분석 시작하기'}
+                            {loading ? '🔍 AI 분석 중...' : '무료로 분석 시작하기'}
                         </button>
                     </form>
+                    {loading && (
+                        <div style={{
+                            marginTop: '20px',
+                            padding: '15px',
+                            backgroundColor: '#f0f9ff',
+                            border: '2px solid #3b82f6',
+                            borderRadius: '8px',
+                            textAlign: 'center',
+                            fontSize: '14px',
+                            color: '#1e40af'
+                        }}>
+                            <div style={{ marginBottom: '10px', fontSize: '16px', fontWeight: 'bold' }}>
+                                ⏳ 콘텐츠 분석이 진행 중입니다
+                            </div>
+                            <div style={{ marginBottom: '5px' }}>
+                                • Selenium으로 웹페이지 크롤링 중...
+                            </div>
+                            <div style={{ marginBottom: '5px' }}>
+                                • Gemini LLM으로 콘텐츠 분석 중...
+                            </div>
+                            <div style={{ marginBottom: '5px' }}>
+                                • RAG 기반 유해성 검증 중...
+                            </div>
+                            <div style={{ marginTop: '10px', fontSize: '13px', color: '#6b7280' }}>
+                                분석에는 최대 2-3분이 소요될 수 있습니다. 잠시만 기다려주세요.
+                            </div>
+                        </div>
+                    )}
                 </div>
             </section>
+
+            {/* Error Section */}
+            {error && (
+                <section className="results-section">
+                    <div className="container">
+                        <div className="error-message" style={{
+                            backgroundColor: '#fee',
+                            border: '2px solid #f66',
+                            borderRadius: '8px',
+                            padding: '20px',
+                            textAlign: 'center',
+                            color: '#c33'
+                        }}>
+                            <h3 style={{ marginBottom: '10px' }}>⚠️ 분석 실패</h3>
+                            <p>{error}</p>
+                        </div>
+                    </div>
+                </section>
+            )}
 
             {/* Results Section */}
             {results && (
