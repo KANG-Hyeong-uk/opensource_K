@@ -39,18 +39,26 @@ const DocCard = ({ doc }) => {
             클릭 -> 180도 회전 -> 앞면(내용).
         */}
 
-                {/* Front: 카드 뒷면 디자인 (초기 노출) */}
+                {/* Front: 카드 앞면 디자인 (이미지 참조: 상단 주황색 패턴, 하단 흰색 정보) */}
                 <div className="doc-card-face doc-card-front">
-                    <div className="card-pattern">
-                        <div className="icon-wrapper">
-                            <span className="lock-icon">🔒</span>
+                    <div className="card-front-top">
+                        <div className="doc-icon-wrapper">
+                            {/* 문서 아이콘 (파일 모양 w/ 겹침 효과) */}
+                            <svg width="60" height="70" viewBox="0 0 60 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="5" y="5" width="45" height="55" rx="4" fill="#f8fafc" stroke="#334155" strokeWidth="2" />
+                                <rect x="10" y="0" width="45" height="55" rx="4" fill="white" stroke="#334155" strokeWidth="2" />
+                                <path d="M20 15H45" stroke="#94a3b8" strokeWidth="3" strokeLinecap="round" />
+                                <path d="M20 25H45" stroke="#cbd5e1" strokeWidth="3" strokeLinecap="round" />
+                                <path d="M20 35H35" stroke="#cbd5e1" strokeWidth="3" strokeLinecap="round" />
+                                {/* Folded corner effect */}
+                                <path d="M43 0L55 12H47C44.7909 12 43 10.2091 43 8V0Z" fill="#cbd5e1" />
+                            </svg>
                         </div>
-                        <p className="click-hint">Click to Reveal</p>
                     </div>
-                    <div className="corner-deco top-left">✦</div>
-                    <div className="corner-deco top-right">✦</div>
-                    <div className="corner-deco bottom-left">✦</div>
-                    <div className="corner-deco bottom-right">✦</div>
+                    <div className="card-front-bottom">
+                        <h3 className="front-title">{doc.title}</h3>
+                        <span className="official-badge">OFFICIAL DOCS</span>
+                    </div>
                 </div>
 
                 {/* Back: 카드 내용 (클릭 후 노출) */}
@@ -119,7 +127,7 @@ const AiEvalDocs = () => {
 
     return (
         <div className="ai-eval-page">
-            <div className="container">
+            <div className="wide-container">
                 <div className="ai-eval-header">
                     <h1>AI 평가 문서</h1>
                     <p>

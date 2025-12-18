@@ -47,7 +47,7 @@ const Header = () => {
 
                 <nav className={`gnb ${isMenuOpen ? 'open' : ''}`}>
                     <Link to="/" className={isActive('/') ? 'active' : ''} onClick={closeMenu}>Home</Link>
-                    <Link to="/analysis" className={isActive('/analysis') ? 'active' : ''} onClick={closeMenu}>AI평가 및 검증 문서</Link>
+                    <Link to="/ai-eval" className={isActive('/ai-eval') ? 'active' : ''} onClick={closeMenu}>AI평가 및 검증 문서</Link>
                     <Link to="/docs" className={isActive('/docs') ? 'active' : ''} onClick={closeMenu}>API 명세서</Link>
                     <Link to="/api-usage" className={isActive('/api-usage') ? 'active' : ''} onClick={closeMenu}>API 사용량</Link>
                     {userInfo ? (
