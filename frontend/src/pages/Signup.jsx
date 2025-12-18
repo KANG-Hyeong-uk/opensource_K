@@ -14,6 +14,9 @@ const Signup = () => {
     const [error, setError] = useState('');
     const [fieldErrors, setFieldErrors] = useState({});
 
+    const [showPassword, setShowPassword] = useState(false);
+    const [showPasswordCheck, setShowPasswordCheck] = useState(false);
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({
@@ -28,6 +31,9 @@ const Signup = () => {
         }
         if (error) setError('');
     };
+
+    const togglePassword = () => setShowPassword(!showPassword);
+    const togglePasswordCheck = () => setShowPasswordCheck(!showPasswordCheck);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -94,7 +100,7 @@ const Signup = () => {
                             type="text"
                             name="username"
                             className="input-field"
-                            placeholder="testuser"
+                            placeholder="아이디를 입력하세요."
                             value={formData.username}
                             onChange={handleChange}
                             disabled={loading}
@@ -112,7 +118,7 @@ const Signup = () => {
                             type="email"
                             name="email"
                             className="input-field"
-                            placeholder="user@example.com"
+                            placeholder="이메일을 입력하세요."
                             value={formData.email}
                             onChange={handleChange}
                             disabled={loading}
@@ -126,15 +132,48 @@ const Signup = () => {
 
                     <div style={{ marginBottom: '20px' }}>
                         <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>비밀번호</label>
-                        <input
-                            type="password"
-                            name="password"
-                            className="input-field"
-                            placeholder="••••••••"
-                            value={formData.password}
-                            onChange={handleChange}
-                            disabled={loading}
-                        />
+                        <div style={{ position: 'relative' }}>
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                name="password"
+                                className="input-field"
+                                placeholder="비밀번호를 입력하세요."
+                                value={formData.password}
+                                onChange={handleChange}
+                                disabled={loading}
+                                style={{ paddingRight: '40px' }}
+                            />
+                            <button
+                                type="button"
+                                onClick={togglePassword}
+                                style={{
+                                    position: 'absolute',
+                                    right: '10px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    padding: '4px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: '#666'
+                                }}
+                            >
+                                {showPassword ? (
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                ) : (
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                    </svg>
+                                )}
+                            </button>
+                        </div>
                         {fieldErrors.password && (
                             <div style={{ color: '#c33', fontSize: '12px', marginTop: '4px' }}>
                                 {Array.isArray(fieldErrors.password) ? fieldErrors.password[0] : fieldErrors.password}
@@ -144,15 +183,48 @@ const Signup = () => {
 
                     <div style={{ marginBottom: '32px' }}>
                         <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>비밀번호 확인</label>
-                        <input
-                            type="password"
-                            name="password_check"
-                            className="input-field"
-                            placeholder="••••••••"
-                            value={formData.password_check}
-                            onChange={handleChange}
-                            disabled={loading}
-                        />
+                        <div style={{ position: 'relative' }}>
+                            <input
+                                type={showPasswordCheck ? "text" : "password"}
+                                name="password_check"
+                                className="input-field"
+                                placeholder="비밀번호를 다시 입력하세요."
+                                value={formData.password_check}
+                                onChange={handleChange}
+                                disabled={loading}
+                                style={{ paddingRight: '40px' }}
+                            />
+                            <button
+                                type="button"
+                                onClick={togglePasswordCheck}
+                                style={{
+                                    position: 'absolute',
+                                    right: '10px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    padding: '4px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: '#666'
+                                }}
+                            >
+                                {showPasswordCheck ? (
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                ) : (
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                    </svg>
+                                )}
+                            </button>
+                        </div>
                         {fieldErrors.password_check && (
                             <div style={{ color: '#c33', fontSize: '12px', marginTop: '4px' }}>
                                 {Array.isArray(fieldErrors.password_check) ? fieldErrors.password_check[0] : fieldErrors.password_check}
