@@ -1,11 +1,13 @@
 """
-Google Gemini LLM 제공자
+SKT A.X-4.0-Light LLM 제공자
+Hugging Face Transformers 기반
 """
 
 import json
 import logging
 from typing import Dict, Optional
-import google.generativeai as genai
+import torch
+from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 from django.conf import settings
 
 from core.exceptions import LLMException
@@ -14,47 +16,51 @@ from apps.llm_provider.services.prompt_manager import PromptManager
 logger = logging.getLogger(__name__)
 
 
-class GeminiProvider:
+class AXProvider:
     """
-    Google Gemini API 제공자
-    확장 가능하고 유지보수가 용이한 구조
+    SKT A.X-4.0-Light Provider
+    Hugging Face Transformers 기반 로컬 LLM 제공자
     """
 
     def __init__(self):
-        """Gemini Provider 초기화"""
-        # API 키 설정
-        api_key = getattr(settings, 'GEMINI_API_KEY', None)
-        if not api_key:
-            raise LLMException("GEMINI_API_KEY is not configured")
-
-        genai.configure(api_key=api_key)
-
-        # 모델 설정
-        model_name = getattr(settings, 'GEMINI_MODEL', 'gemini-flash-latest')
-        self.model = genai.GenerativeModel(model_name)
-
-        # 프롬프트 관리자
-        self.prompt_manager = PromptManager()
-
-        logger.info(f"Gemini Provider initialized with model: {model_name}")
-
-    async def list_available_models(self) -> list:
-        """
-        사용 가능한 모델 목록 조회
-
-        Returns:
-            list: 모델 이름 리스트
-        """
+        """A.X Provider 초기화"""
         try:
-            models = genai.list_models()
-            return [model.name for model in models]
+            # 모델 이름
+            model_name = getattr(settings, 'AX_MODEL', 'skt/A.X-4.0-Light')
+
+            logger.info(f"Loading A.X model: {model_name}...")
+
+            # 토크나이저 로드
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+            # 모델 로드
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model_name,
+                torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
+                device_map="auto" if torch.cuda.is_available() else None,
+            )
+
+            # GPU 사용 가능 여부 확인
+            self.device = "cuda" if torch.cuda.is_available() else "cpu"
+            if self.device == "cpu":
+                self.model = self.model.to(self.device)
+
+            # 최대 생성 토큰 수
+            self.max_new_tokens = getattr(settings, 'AX_MAX_NEW_TOKENS', 2048)
+
+            # 프롬프트 관리자
+            self.prompt_manager = PromptManager()
+
+            logger.info(f"A.X Provider initialized successfully on {self.device}")
+            logger.info(f"Model: {model_name}")
+
         except Exception as e:
-            logger.error(f"Failed to list models: {str(e)}")
-            return []
+            logger.error(f"Failed to initialize A.X Provider: {str(e)}")
+            raise LLMException(f"Failed to initialize A.X model: {str(e)}")
 
     def generate_content(self, prompt: str) -> str:
         """
-        Gemini API로 콘텐츠 생성
+        A.X 모델로 콘텐츠 생성
 
         Args:
             prompt: 프롬프트 문자열
@@ -63,22 +69,50 @@ class GeminiProvider:
             str: 생성된 텍스트
 
         Raises:
-            LLMException: API 호출 실패 시
+            LLMException: 모델 호출 실패 시
         """
         try:
-            logger.info("Calling Gemini API...")
+            logger.info("Calling A.X model...")
 
-            # Gemini API 호출
-            response = self.model.generate_content(prompt)
+            # 메시지 포맷 (chat template 사용)
+            messages = [
+                {"role": "user", "content": prompt}
+            ]
 
-            if not response or not response.text:
-                raise LLMException("Empty response from Gemini API")
+            # 토크나이징 및 생성
+            inputs = self.tokenizer.apply_chat_template(
+                messages,
+                add_generation_prompt=True,
+                tokenize=True,
+                return_dict=True,
+                return_tensors="pt",
+            ).to(self.model.device)
 
-            logger.info("Gemini API call successful")
-            return response.text
+            # 텍스트 생성
+            with torch.no_grad():
+                outputs = self.model.generate(
+                    **inputs,
+                    max_new_tokens=self.max_new_tokens,
+                    do_sample=True,
+                    temperature=0.7,
+                    top_p=0.9,
+                    repetition_penalty=1.1,
+                )
+
+            # 생성된 텍스트 디코딩 (입력 부분 제외)
+            generated_text = self.tokenizer.decode(
+                outputs[0][inputs["input_ids"].shape[-1]:],
+                skip_special_tokens=True
+            )
+
+            if not generated_text or not generated_text.strip():
+                raise LLMException("Empty response from A.X model")
+
+            logger.info("A.X model call successful")
+            return generated_text.strip()
 
         except Exception as e:
-            logger.error(f"Gemini API call failed: {str(e)}")
+            logger.error(f"A.X model call failed: {str(e)}")
             raise LLMException(f"Failed to generate content: {str(e)}")
 
     def analyze_content(self, title: str, content: str) -> Dict:
@@ -101,7 +135,7 @@ class GeminiProvider:
             # 통합 프롬프트 생성
             prompt = self.prompt_manager.get_combined_analysis_prompt(title, content)
 
-            # Gemini API 호출
+            # A.X 모델 호출
             response_text = self.generate_content(prompt)
 
             # JSON 파싱
@@ -166,7 +200,7 @@ class GeminiProvider:
         JSON 응답 파싱
 
         Args:
-            response_text: Gemini API 응답 텍스트
+            response_text: 모델 응답 텍스트
 
         Returns:
             Dict: 파싱된 JSON 객체
@@ -270,7 +304,8 @@ class GeminiProvider:
             Dict: 모델 정보
         """
         return {
-            'model_name': getattr(settings, 'GEMINI_MODEL', 'gemini-flash-latest'),
-            'provider': 'Google Gemini',
-            'version': '2.5'
+            'model_name': getattr(settings, 'AX_MODEL', 'skt/A.X-4.0-Light'),
+            'provider': 'SKT A.X',
+            'version': '4.0',
+            'device': self.device
         }

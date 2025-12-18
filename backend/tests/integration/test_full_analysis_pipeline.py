@@ -1,6 +1,6 @@
 """
 전체 URL 분석 파이프라인 통합 테스트
-- Selenium → RAG → Gemini → 결과 저장
+- Selenium → RAG → A.X → 결과 저장
 - 실제 엔드-투-엔드 테스트
 """
 import pytest
@@ -312,7 +312,7 @@ class TestFullAnalysisPipeline(TestCase):
         print("\n4️⃣ 전체 분석 파이프라인 실행...")
         print("   - Selenium 크롤링...")
         print("   - RAG 유사 문서 검색...")
-        print("   - Gemini LLM 분석...")
+        print("   - A.X LLM 분석...")
         print("   - 결과 저장...")
 
         result = service.analyze_url(test_url, user=user)

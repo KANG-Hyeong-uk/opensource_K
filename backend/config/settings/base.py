@@ -154,9 +154,9 @@ SIMPLE_JWT = {
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = []
 
-# Gemini LLM Settings
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
-GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-flash-latest')  # 또는 gemini-2.5-flash
+# A.X LLM Settings
+AX_MODEL = os.getenv('AX_MODEL', 'skt/A.X-4.0-Light')
+AX_MAX_NEW_TOKENS = int(os.getenv('AX_MAX_NEW_TOKENS', '2048'))
 
 # Selenium Settings
 SELENIUM_HEADLESS = True

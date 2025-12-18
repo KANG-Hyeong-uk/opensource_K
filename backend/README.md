@@ -1,587 +1,495 @@
-# 🚀 URL Analysis Service - Django Backend (Simplified)
+# 🔧 Backend - Django REST API Server
 
-> Selenium + Gemini LLM 기반 클릭베이트·혐오·낚시성 콘텐츠 탐지 서비스
+> SKT A.X-4.0-Light 기반 AI 콘텐츠 분석 백엔드 시스템
+
+---
 
 ## 📋 목차
-- [프로젝트 개요](#프로젝트-개요)
-- [디렉토리 구조](#디렉토리-구조)
-- [앱별 역할 설명](#앱별-역할-설명)
-- [개발 환경 설정](#개발-환경-설정)
-- [배포 가이드](#배포-가이드)
+
+- [개요](#개요)
+- [기술 스택](#기술-스택)
+- [시스템 아키텍처](#시스템-아키텍처)
+- [설치 및 실행](#설치-및-실행)
 - [API 문서](#api-문서)
+- [환경 설정](#환경-설정)
+- [배포](#배포)
 
 ---
 
-## 🎯 프로젝트 개요
+## 🎯 개요
+
+ThinkforBL의 백엔드는 Django REST Framework 기반으로 구축된 API 서버로, URL 크롤링부터 AI 분석까지 모든 핵심 로직을 처리합니다.
 
 ### 주요 기능
-1. **사용자 인증**: 회원가입/로그인 (Django 기본 인증 + JWT)
-2. **URL 분석**: Selenium 크롤링 → LangChain + Gemini LLM 기반 콘텐츠 위험도 판별
-3. **API 키 관리**: 외부 개발자를 위한 API 키 발급 및 관리
-4. **사용량 모니터링**: API 사용량 추적
-5. **RESTful API**: 외부 통합을 위한 공개 API
 
-### 기술 스택 (간소화)
-- **Framework**: Django 5.0+, Django REST Framework
-- **Database**: SQLite (개발/배포 공통)
-- **Crawling**: Selenium (동적 페이지 지원)
-- **LLM**: Google Gemini API + LangChain
-- **Deployment**: Gunicorn, Nginx, AWS EC2
-
-### 제거된 기능 (간소화)
-- ❌ PostgreSQL (→ SQLite 사용)
-- ❌ Redis Cache
-- ❌ Celery Task Queue (→ 동기 처리)
-- ❌ ChromaDB/Vector DB (→ LLM 직접 분석)
-- ❌ AWS S3 (→ 로컬 저장)
+- **사용자 인증** - JWT 기반 회원가입/로그인
+- **URL 분석 엔진** - Selenium + A.X LLM 통합 파이프라인
+- **RAG 시스템** - 유사 사례 기반 컨텍스트 제공
+- **API 키 관리** - 외부 개발자용 API 키 발급 및 사용량 추적
+- **분석 히스토리** - 사용자별 분석 기록 저장
 
 ---
 
-## 📁 디렉토리 구조
+## 💻 기술 스택
+
+### Core Framework
+- **Django 5.0.1** - Python 웹 프레임워크
+- **Django REST Framework 3.14.0** - RESTful API
+- **djangorestframework-simplejwt 5.3.1** - JWT 인증
+- **django-cors-headers 4.3.1** - CORS 처리
+
+### AI & Machine Learning
+- **SKT A.X-4.0-Light** - 로컬 LLM 모델
+- **transformers 4.36.0** - Hugging Face Transformers
+- **torch 2.2.2** - PyTorch 딥러닝 프레임워크
+- **sentence-transformers 3.3.1** - 문장 임베딩
+
+### Web Crawling
+- **selenium 4.16.0** - 동적 웹 크롤링
+- **beautifulsoup4 4.12.2** - HTML 파싱
+- **lxml 5.1.0** - XML/HTML 처리
+
+### Database
+- **SQLite** - 경량 관계형 DB (개발/운영 공통)
+
+---
+
+## 🏗️ 시스템 아키텍처
+
+### 앱 구조
 
 ```
-backend/
-│
-├── config/                          # Django 프로젝트 설정
-│   ├── __init__.py
-│   ├── asgi.py
-│   ├── wsgi.py                     # WSGI 설정 (Gunicorn용)
-│   ├── urls.py                     # 루트 URL 라우팅
-│   │
-│   └── settings/                   # 환경별 설정
-│       ├── __init__.py
-│       ├── base.py                 # 공통 설정
-│       ├── dev.py                  # 개발 환경
-│       └── prod.py                 # 프로덕션 환경
-│
-├── apps/                           # Django 앱 모음
-│   │
-│   ├── accounts/                   # 사용자 인증 및 관리
-│   │   ├── models.py              # User, Profile 모델
-│   │   ├── serializers.py         # User 직렬화
-│   │   ├── views.py               # 회원가입, 로그인
-│   │   ├── urls.py
-│   │   ├── services.py            # 비즈니스 로직
-│   │   └── tests/
-│   │
-│   ├── detection/                  # URL 분석 핵심 기능
-│   │   ├── models.py              # AnalysisResult
-│   │   ├── serializers.py
-│   │   ├── views.py               # URL 분석 요청 처리
-│   │   ├── urls.py
-│   │   ├── services/
-│   │   │   ├── analysis_service.py      # 분석 오케스트레이션
-│   │   │   └── content_classifier.py    # 콘텐츠 분류
-│   │   └── tests/
-│   │
-│   ├── crawler/                    # Selenium 크롤링
-│   │   ├── models.py              # CrawledContent
-│   │   ├── services/
-│   │   │   ├── selenium_crawler.py      # Selenium 크롤러
-│   │   │   ├── content_extractor.py     # 본문 추출
-│   │   │   └── metadata_parser.py       # 메타데이터 파싱
-│   │   ├── utils/
-│   │   │   ├── validators.py            # URL 검증
-│   │   │   └── sanitizers.py            # 텍스트 정제
-│   │   └── tests/
-│   │
-│   ├── llm_provider/               # Gemini LLM 통합
-│   │   ├── models.py              # LLMRequest (로깅용)
-│   │   ├── services/
-│   │   │   ├── gemini_provider.py       # Gemini API
-│   │   │   └── prompt_manager.py        # 프롬프트 관리
-│   │   ├── prompts/
-│   │   │   ├── clickbait_detection.txt
-│   │   │   ├── hate_speech_detection.txt
-│   │   │   └── misinformation_detection.txt
-│   │   └── tests/
-│   │
-│   ├── api_keys/                   # API 키 관리
-│   │   ├── models.py              # APIKey, APIKeyUsage
-│   │   ├── serializers.py
-│   │   ├── views.py               # 키 발급, 조회
-│   │   ├── urls.py
-│   │   ├── services.py            # 키 생성, 검증
-│   │   ├── permissions.py         # API 키 권한
-│   │   └── tests/
-│   │
-│   └── analytics/                  # 사용량 통계
-│       ├── models.py              # UsageLog
-│       ├── serializers.py
-│       ├── views.py               # 대시보드
-│       ├── urls.py
-│       ├── services.py
-│       └── tests/
-│
-├── core/                           # 공통 유틸리티
-│   ├── exceptions.py              # 커스텀 예외
-│   ├── responses.py               # 표준 응답 포맷
-│   ├── pagination.py
-│   ├── permissions.py
-│   ├── middleware.py
-│   └── utils/
-│       ├── logger.py
-│       └── decorators.py
-│
-├── tests/                          # 통합 테스트
-│   ├── conftest.py
-│   ├── factories.py
-│   └── integration/
-│       └── test_url_analysis_flow.py
-│
-├── static/                         # 정적 파일
-├── media/                          # 업로드 파일
-├── logs/                           # 로그 파일
-│
-├── .env.example
-├── .gitignore
-├── manage.py
-├── requirements/
-│   ├── base.txt
-│   ├── dev.txt
-│   └── prod.txt
-├── pytest.ini
-└── README.md
+apps/
+├── accounts/        # 사용자 인증 및 관리
+├── detection/       # URL 분석 오케스트레이션
+├── crawler/         # Selenium 기반 웹 크롤링
+├── llm_provider/    # A.X LLM 통합
+├── rag/             # RAG(Retrieval-Augmented Generation) 시스템
+├── api_keys/        # API 키 발급 및 관리
+└── analytics/       # 사용량 통계
+```
+
+### 분석 파이프라인
+
+```
+URL 입력
+  ↓
+[Selenium Crawler]
+  ↓
+콘텐츠 추출 (제목, 본문, 메타데이터)
+  ↓
+[RAG Service] - 유사 사례 검색
+  ↓
+[A.X LLM Provider]
+  ├─ 클릭베이트 분석
+  ├─ 혐오 표현 분석
+  └─ 허위정보 분석
+  ↓
+종합 위험도 점수 계산
+  ↓
+데이터베이스 저장
+  ↓
+JSON 응답 반환
 ```
 
 ---
 
-## 🎯 앱별 역할 설명
+## 🚀 설치 및 실행
 
-### 1. **accounts** - 사용자 인증
-```python
-# models.py
-class User(AbstractUser):
-    """커스텀 사용자 모델"""
-    pass
+### 1. 사전 요구사항
 
-# services.py
-class UserService:
-    @staticmethod
-    def register_user(username, password, name):
-        """회원가입"""
+- Python 3.12 이상
+- Chrome 브라우저
+- (선택) CUDA 지원 GPU (A.X 모델 가속화)
 
-    @staticmethod
-    def authenticate_user(username, password):
-        """로그인"""
-```
+### 2. 가상환경 설정
 
-### 2. **detection** - URL 분석 오케스트레이션
-```python
-# services/analysis_service.py
-class URLAnalysisService:
-    def analyze_url(self, url: str, user: User) -> AnalysisResult:
-        """
-        전체 분석 파이프라인
-        1. Selenium으로 URL 크롤링
-        2. 콘텐츠 전처리
-        3. Gemini LLM 분석
-        4. 결과 저장
-        """
-        # Selenium 크롤링
-        crawler = SeleniumCrawler()
-        content = crawler.crawl(url)
-
-        # Gemini 분석
-        llm = GeminiProvider()
-        analysis = llm.analyze_content(content)
-
-        # 결과 저장
-        return self._save_result(url, user, analysis)
-```
-
-### 3. **crawler** - Selenium 크롤링
-```python
-# services/selenium_crawler.py
-class SeleniumCrawler:
-    def __init__(self):
-        from selenium import webdriver
-        options = webdriver.ChromeOptions()
-        options.add_argument('--headless')
-        self.driver = webdriver.Chrome(options=options)
-
-    def crawl(self, url: str) -> CrawledContent:
-        """동적 페이지 크롤링"""
-        self.driver.get(url)
-        # JavaScript 렌더링 대기
-        time.sleep(2)
-
-        html = self.driver.page_source
-        soup = BeautifulSoup(html, 'lxml')
-
-        # 콘텐츠 추출
-        extractor = ContentExtractor()
-        main_content = extractor.extract(soup)
-
-        return CrawledContent(
-            url=url,
-            content=main_content,
-            html=html
-        )
-```
-
-### 4. **llm_provider** - Gemini LLM
-```python
-# services/gemini_provider.py
-class GeminiProvider:
-    def __init__(self):
-        import google.generativeai as genai
-        genai.configure(api_key=settings.GEMINI_API_KEY)
-        self.model = genai.GenerativeModel('gemini-pro')
-
-    def analyze_content(self, content: str) -> dict:
-        """Gemini로 콘텐츠 분석"""
-        prompt_manager = PromptManager()
-
-        # 클릭베이트 분석
-        clickbait_prompt = prompt_manager.get_clickbait_prompt(content)
-        clickbait_result = self._call_gemini(clickbait_prompt)
-
-        # 혐오 표현 분석
-        hate_prompt = prompt_manager.get_hate_speech_prompt(content)
-        hate_result = self._call_gemini(hate_prompt)
-
-        # 허위정보 분석
-        misinfo_prompt = prompt_manager.get_misinformation_prompt(content)
-        misinfo_result = self._call_gemini(misinfo_prompt)
-
-        return {
-            'is_clickbait': clickbait_result['is_positive'],
-            'is_hate_speech': hate_result['is_positive'],
-            'is_misinformation': misinfo_result['is_positive'],
-            'confidence': self._calculate_confidence([
-                clickbait_result, hate_result, misinfo_result
-            ])
-        }
-
-    def _call_gemini(self, prompt: str) -> dict:
-        """Gemini API 호출"""
-        response = self.model.generate_content(prompt)
-        return self._parse_response(response.text)
-```
-
-### 5. **api_keys** - API 키 관리
-```python
-# models.py
-class APIKey(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    key = models.CharField(max_length=64, unique=True)
-    name = models.CharField(max_length=100)
-    is_active = models.BooleanField(default=True)
-    daily_limit = models.IntegerField(default=1000)
-
-class APIKeyUsage(models.Model):
-    api_key = models.ForeignKey(APIKey, on_delete=models.CASCADE)
-    endpoint = models.CharField(max_length=200)
-    timestamp = models.DateTimeField(auto_now_add=True)
-```
-
----
-
-## 🛠 개발 환경 설정
-
-### 1. 가상환경 생성
 ```bash
+# 가상환경 생성
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# 가상환경 활성화
+source venv/bin/activate  # Linux/Mac
+# 또는
+venv\Scripts\activate     # Windows
 ```
 
-### 2. 의존성 설치
+### 3. 패키지 설치
+
 ```bash
+# 기본 패키지 (운영 환경)
+pip install -r requirements/base.txt
+
+# 개발 환경 (테스트, 린터 포함)
 pip install -r requirements/dev.txt
 ```
 
-### 3. 환경변수 설정 (.env.dev)
+### 4. 환경변수 설정
+
 ```bash
-# Django
-SECRET_KEY=your-secret-key
+# .env.example을 복사하여 .env 생성
+cp .env.example .env
+```
+
+`.env` 파일 예시:
+```bash
+# Django 설정
+SECRET_KEY=your-secret-key-here
 DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
 
-# Database (SQLite - 자동 생성)
+# 데이터베이스
 DB_NAME=db.sqlite3
 
-# Gemini API
-GEMINI_API_KEY=your-gemini-api-key-here
+# A.X 모델 설정 (선택사항, 기본값 사용)
+# AX_MODEL=skt/A.X-4.0-Light
+# AX_MAX_NEW_TOKENS=2048
 
 # Selenium
-CHROME_DRIVER_PATH=/usr/local/bin/chromedriver  # 선택적
+SELENIUM_HEADLESS=True
+
+# CORS
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 ```
 
-### 4. 데이터베이스 초기화
+### 5. 데이터베이스 마이그레이션
+
 ```bash
-export DJANGO_SETTINGS_MODULE=config.settings.dev
-python manage.py makemigrations
 python manage.py migrate
+```
+
+### 6. 슈퍼유저 생성 (관리자 계정)
+
+```bash
 python manage.py createsuperuser
 ```
 
-### 5. Selenium ChromeDriver 설치
-```bash
-# Ubuntu/Debian
-sudo apt-get install chromium-chromedriver
+### 7. 개발 서버 실행
 
-# macOS
-brew install chromedriver
-
-# 또는 수동 다운로드
-# https://chromedriver.chromium.org/downloads
-```
-
-### 6. 개발 서버 실행
 ```bash
 python manage.py runserver
 ```
 
----
+서버가 `http://localhost:8000`에서 실행됩니다.
 
-## 🚀 배포 가이드 (AWS EC2)
+### 8. 관리자 페이지 접속
 
-### 환경변수 (.env.prod)
-```bash
-SECRET_KEY=<강력한-랜덤-키>
-DEBUG=False
-ALLOWED_HOSTS=your-domain.com,your-ec2-ip
-
-# Gemini API
-GEMINI_API_KEY=<실제-키>
-
-# Security
-CSRF_TRUSTED_ORIGINS=https://your-domain.com
-CORS_ALLOWED_ORIGINS=https://your-frontend.com
-```
-
-### Gunicorn 설정 (gunicorn.conf.py)
-```python
-bind = '0.0.0.0:8000'
-workers = 2
-worker_class = 'sync'
-timeout = 120  # Selenium 크롤링 대기 시간
-accesslog = '/var/log/gunicorn/access.log'
-errorlog = '/var/log/gunicorn/error.log'
-```
-
-### Nginx 설정
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-
-    client_max_body_size 10M;
-
-    location /static/ {
-        alias /var/www/urlanalysis/static/;
-    }
-
-    location /media/ {
-        alias /var/www/urlanalysis/media/;
-    }
-
-    location / {
-        proxy_pass http://127.0.0.1:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_read_timeout 120s;  # Selenium 대기
-    }
-}
-```
-
-### EC2 배포 스크립트
-```bash
-#!/bin/bash
-set -e
-
-# 코드 업데이트
-git pull origin main
-
-# 의존성 설치
-source venv/bin/activate
-pip install -r requirements/prod.txt
-
-# 정적 파일
-export DJANGO_SETTINGS_MODULE=config.settings.prod
-python manage.py collectstatic --noinput
-python manage.py migrate --noinput
-
-# Gunicorn 재시작
-sudo systemctl restart gunicorn
-sudo systemctl reload nginx
-
-echo "✅ 배포 완료!"
-```
+`http://localhost:8000/admin/`에서 Django 관리자 페이지에 접속할 수 있습니다.
 
 ---
 
 ## 📡 API 문서
 
-### 인증
-```
-POST /api/v1/auth/register/
-Body: {
-  "username": "user123",
-  "password": "pass123",
-  "password_check": "pass123",
+### 인증 API
+
+#### 회원가입
+```http
+POST /api/v1/accounts/signup/
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "securepass123",
+  "password_confirm": "securepass123",
   "name": "홍길동"
 }
+```
 
-POST /api/v1/auth/login/
-Body: {
-  "username": "user123",
-  "password": "pass123"
-}
-Response: {
-  "access": "jwt-token...",
-  "refresh": "refresh-token..."
+**응답:**
+```json
+{
+  "message": "회원가입이 완료되었습니다.",
+  "user": {
+    "id": 1,
+    "username": "testuser",
+    "name": "홍길동"
+  }
 }
 ```
 
-### URL 분석
-```
-POST /api/v1/analyze/
-Headers: Authorization: Bearer <jwt-token>
-Body: {
-  "url": "https://example.com/article"
-}
-Response: {
-  "id": 1,
-  "url": "https://example.com/article",
-  "is_clickbait": true,
-  "is_hate_speech": false,
-  "is_misinformation": false,
-  "confidence_score": 0.87,
-  "created_at": "2025-12-08T10:00:00Z"
-}
+#### 로그인
+```http
+POST /api/v1/accounts/login/
+Content-Type: application/json
 
-GET /api/v1/history/
-Headers: Authorization: Bearer <jwt-token>
-Response: [분석 이력 목록]
+{
+  "username": "testuser",
+  "password": "securepass123"
+}
 ```
 
-### API 키 관리
-```
-POST /api/v1/api-keys/
-Headers: Authorization: Bearer <jwt-token>
-Body: {
-  "name": "My App Key"
-}
-Response: {
-  "key": "ak_...",
-  "name": "My App Key"
-}
-
-GET /api/v1/api-keys/
-Headers: Authorization: Bearer <jwt-token>
-```
-
-### 외부 API (API 키 사용)
-```
-POST /api/v1/public/analyze/
-Headers: X-API-Key: ak_...
-Body: {
-  "url": "https://example.com"
+**응답:**
+```json
+{
+  "access": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+  "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+  "user": {
+    "id": 1,
+    "username": "testuser"
+  }
 }
 ```
 
 ---
 
-## 📦 주요 의존성
+### 분석 API
 
-### requirements/base.txt
-```
-Django==5.0.1
-djangorestframework==3.14.0
-djangorestframework-simplejwt==5.3.1
-django-cors-headers==4.3.1
+#### URL 분석
+```http
+POST /api/v1/detection/analyze/
+Authorization: Bearer {access_token}
+Content-Type: application/json
 
-# Gemini LLM
-google-generativeai==0.3.1
-langchain==0.1.0
-langchain-google-genai==0.0.5
-
-# Selenium
-selenium==4.16.0
-webdriver-manager==4.0.1
-
-# Web Scraping
-beautifulsoup4==4.12.2
-lxml==5.1.0
-
-# Utilities
-python-dotenv==1.0.0
+{
+  "url": "https://example.com/article"
+}
 ```
 
-### requirements/dev.txt
+**응답:**
+```json
+{
+  "id": 42,
+  "url": "https://example.com/article",
+  "title": "기사 제목",
+  "is_clickbait": true,
+  "is_hate_speech": false,
+  "is_misinformation": false,
+  "confidence_score": 0.85,
+  "explanation": "클릭베이트: 제목이 과장되고 선정적입니다.",
+  "risk_level": "HIGH",
+  "created_at": "2025-12-19T12:00:00Z"
+}
 ```
--r base.txt
 
-# Testing
-pytest==7.4.4
-pytest-django==4.7.0
-pytest-cov==4.1.0
-
-# Code Quality
-black==23.12.1
-flake8==7.0.0
+#### 분석 히스토리 조회
+```http
+GET /api/v1/detection/history/
+Authorization: Bearer {access_token}
 ```
 
-### requirements/prod.txt
+**응답:**
+```json
+{
+  "count": 10,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": 42,
+      "url": "https://example.com/article",
+      "is_clickbait": true,
+      "confidence_score": 0.85,
+      "created_at": "2025-12-19T12:00:00Z"
+    }
+  ]
+}
 ```
--r base.txt
 
-gunicorn==21.2.0
+#### 특정 분석 결과 조회
+```http
+GET /api/v1/detection/results/{id}/
+Authorization: Bearer {access_token}
 ```
+
+---
+
+### API 키 관리
+
+#### API 키 발급
+```http
+POST /api/v1/api-keys/
+Authorization: Bearer {access_token}
+Content-Type: application/json
+
+{
+  "name": "My App API Key"
+}
+```
+
+**응답:**
+```json
+{
+  "id": 1,
+  "key": "ak_1234567890abcdef1234567890abcdef",
+  "name": "My App API Key",
+  "is_active": true,
+  "daily_limit": 1000,
+  "created_at": "2025-12-19T12:00:00Z"
+}
+```
+
+#### API 키 목록 조회
+```http
+GET /api/v1/api-keys/
+Authorization: Bearer {access_token}
+```
+
+#### API 키로 분석 (외부 통합용)
+```http
+POST /api/v1/public/analyze/
+X-API-Key: ak_1234567890abcdef1234567890abcdef
+Content-Type: application/json
+
+{
+  "url": "https://example.com/article"
+}
+```
+
+---
+
+### 통계 API
+
+#### 사용량 통계
+```http
+GET /api/v1/analytics/stats/
+Authorization: Bearer {access_token}
+```
+
+**응답:**
+```json
+{
+  "total_analyses": 150,
+  "clickbait_detected": 45,
+  "hate_speech_detected": 12,
+  "misinformation_detected": 8,
+  "safe_content": 85
+}
+```
+
+---
+
+## ⚙️ 환경 설정
+
+### 환경변수 상세
+
+| 변수명 | 설명 | 기본값 | 필수 |
+|--------|------|--------|------|
+| `SECRET_KEY` | Django 시크릿 키 | - | ✅ |
+| `DEBUG` | 디버그 모드 | `False` | ❌ |
+| `ALLOWED_HOSTS` | 허용 호스트 | `localhost` | ✅ |
+| `DB_NAME` | SQLite DB 파일명 | `db.sqlite3` | ❌ |
+| `AX_MODEL` | A.X 모델명 | `skt/A.X-4.0-Light` | ❌ |
+| `AX_MAX_NEW_TOKENS` | 최대 생성 토큰 수 | `2048` | ❌ |
+| `SELENIUM_HEADLESS` | Selenium Headless 모드 | `True` | ❌ |
+| `CORS_ALLOWED_ORIGINS` | CORS 허용 도메인 | - | ✅ |
 
 ---
 
 ## 🧪 테스트
 
+### 전체 테스트 실행
 ```bash
-# 전체 테스트
 pytest
+```
 
-# 특정 앱
+### 특정 앱 테스트
+```bash
+# URL 분석 테스트
 pytest apps/detection/tests/
 
-# 커버리지
+# LLM Provider 테스트
+pytest apps/llm_provider/tests/
+```
+
+### 커버리지 리포트
+```bash
 pytest --cov=apps --cov-report=html
 ```
+
+커버리지 리포트는 `htmlcov/index.html`에서 확인할 수 있습니다.
+
+---
+
+## 🚢 배포
+
+### Gunicorn 설정
+
+```bash
+# Gunicorn 설치
+pip install gunicorn
+
+# 운영 서버 실행
+gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4
+```
+
+### Docker 배포
+
+```bash
+# Docker 이미지 빌드
+docker build -t thinkforbl-backend .
+
+# 컨테이너 실행
+docker run -p 8000:8000 thinkforbl-backend
+```
+
+### 환경별 설정
+
+- **개발**: `config/settings/dev.py`
+- **운영**: `config/settings/prod.py`
+
+운영 환경에서는 다음 설정을 확인하세요:
+- `DEBUG=False`
+- 강력한 `SECRET_KEY` 사용
+- HTTPS 설정
+- CORS 도메인 제한
+- 로깅 설정
 
 ---
 
 ## 🔒 보안 고려사항
 
-1. **API 키 관리**: 환경변수로 관리, 절대 하드코딩 금지
-2. **Rate Limiting**: Django Throttling 사용
-3. **HTTPS**: 프로덕션 필수
-4. **CSRF 보호**: Django 기본 미들웨어 활성화
-5. **SQL Injection**: Django ORM 사용으로 자동 방지
+1. **API 키 보호** - 환경변수로 관리, 절대 하드코딩 금지
+2. **JWT 토큰** - 안전하게 저장, HTTPS 사용 권장
+3. **Rate Limiting** - DRF Throttling으로 API 남용 방지
+4. **CSRF 보호** - Django 기본 미들웨어 활성화
+5. **SQL Injection** - Django ORM 사용으로 자동 방지
 
 ---
 
 ## 📈 성능 최적화
 
-1. **Selenium 최적화**:
-   - Headless 모드 사용
-   - 이미지 로딩 비활성화
-   - 타임아웃 적절히 설정
+### A.X 모델 최적화
+- GPU 사용 시 자동으로 CUDA 활성화
+- CPU 환경에서도 동작하나 속도는 느림
+- 첫 실행 시 모델 다운로드 필요 (약 수 GB)
 
-2. **DB 최적화**:
-   - 인덱스 추가 (url, user, created_at)
-   - Select related 사용
+### Selenium 최적화
+- Headless 모드 사용으로 리소스 절감
+- 타임아웃 적절히 설정 (기본 30초)
+- 이미지 로딩 비활성화 옵션 고려
 
-3. **LLM 비용 절감**:
-   - 중복 URL 분석 방지 (캐싱)
-   - 프롬프트 최적화
+### 데이터베이스 최적화
+- 적절한 인덱스 사용 (url, created_at)
+- QuerySet 최적화 (select_related, prefetch_related)
+
+---
+
+## 🛠️ 개발 도구
+
+### 코드 포맷팅
+```bash
+# Black - 코드 포맷터
+black apps/
+
+# isort - import 정렬
+isort apps/
+```
+
+### 린터
+```bash
+# Flake8
+flake8 apps/
+
+# Pylint
+pylint apps/
+```
 
 ---
 
 ## 📞 문의
 
-- **팀**: K오픈소스 프로젝트
-- **저장소**: https://github.com/yourteam/opensource_K
+백엔드 관련 문의사항이나 버그 리포트는 [Issues](https://github.com/KANG-Hyeong-uk/opensource_K/issues)에 등록해주세요.
 
 ---
 
-## 📄 라이선스
-
-MIT License
+**Powered by Django & SKT A.X-4.0-Light**

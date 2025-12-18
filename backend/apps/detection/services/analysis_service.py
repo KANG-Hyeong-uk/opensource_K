@@ -9,7 +9,7 @@ from django.contrib.auth.models import User
 
 from core.exceptions import CrawlerException, LLMException
 from apps.crawler.services.selenium_crawler import SeleniumCrawler
-from apps.llm_provider.services.gemini_provider import GeminiProvider
+from apps.llm_provider.services.ax_provider import AXProvider
 from apps.detection.models import AnalysisResult
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ class URLAnalysisService:
     URL 분석 전체 파이프라인
     1. URL 크롤링 (Selenium)
     2. RAG 컨텍스트 가져오기 (선택적)
-    3. 콘텐츠 분석 (Gemini LLM with RAG)
+    3. 콘텐츠 분석 (A.X LLM with RAG)
     4. 결과 저장
     """
 
@@ -32,7 +32,7 @@ class URLAnalysisService:
             use_rag: RAG 사용 여부 (기본값: True)
         """
         self.crawler = None  # 필요시마다 생성
-        self.llm_provider = GeminiProvider()
+        self.llm_provider = AXProvider()
         self.use_rag = use_rag
         self.rag_service = None
 
@@ -158,7 +158,7 @@ class URLAnalysisService:
             logger.info("RAG 컨텍스트가 포함된 분석을 수행합니다.")
             # 현재는 기본 분석 사용 (향후 개선 가능)
 
-        # Gemini LLM으로 통합 분석
+        # A.X LLM으로 통합 분석
         analysis_result = self.llm_provider.analyze_content(title, content)
 
         return analysis_result
