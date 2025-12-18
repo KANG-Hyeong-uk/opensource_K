@@ -36,7 +36,7 @@ const ApiDocs = () => {
 # 2. API 키 발급 (웹 UI > API 키 & 사용량)
 # 3. API 키를 안전하게 보관`,
             codeResponse: `# API 키 형식
-sk_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+api키
 
 # 모든 요청에 다음 헤더 포함 필요
 Authorization: Bearer YOUR_API_KEY
