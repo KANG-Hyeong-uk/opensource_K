@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from apps.detection.services.analysis_service import URLAnalysisService
 from apps.detection.serializers import (
@@ -15,6 +16,7 @@ from apps.detection.serializers import (
     AnalysisResultListSerializer,
     AnalysisStatisticsSerializer
 )
+from apps.api_keys.authentication import APIKeyAuthentication
 from core.exceptions import CrawlerException, LLMException
 
 import logging
@@ -26,8 +28,13 @@ class URLAnalysisView(APIView):
     """
     URL 분석 API
     POST: URL 분석 요청
+
+    인증 방법:
+    - JWT 토큰 (웹 UI에서 사용)
+    - API 키 (외부 API 호출)
     """
 
+    authentication_classes = [JWTAuthentication, APIKeyAuthentication]
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
