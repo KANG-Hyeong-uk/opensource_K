@@ -73,7 +73,7 @@ const Login = () => {
                             type="text"
                             name="username"
                             className="input-field"
-                            placeholder="testuser"
+                            placeholder="아이디를 입력하세요."
                             value={formData.username}
                             onChange={handleChange}
                             disabled={loading}
@@ -86,7 +86,7 @@ const Login = () => {
                             type="password"
                             name="password"
                             className="input-field"
-                            placeholder="••••••••"
+                            placeholder="비밀번호를 입력하세요."
                             value={formData.password}
                             onChange={handleChange}
                             disabled={loading}
